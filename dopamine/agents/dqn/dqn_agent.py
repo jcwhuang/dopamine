@@ -102,7 +102,8 @@ class DQNAgent(object):
                    centered=True),
                summary_writer=None,
                summary_writing_frequency=500,
-               allow_partial_reload=False):
+               allow_partial_reload=False,
+               train_from_scratch=False):
     """Initializes the agent and constructs the components of its graph.
 
     Args:
@@ -162,6 +163,7 @@ class DQNAgent(object):
     logging.info('\t optimizer: %s', optimizer)
     logging.info('\t max_tf_checkpoints_to_keep: %d',
                  max_tf_checkpoints_to_keep)
+    logging.info('\t train_from_scratch: %s', train_from_scratch)
 
     self.num_actions = num_actions
     self.observation_shape = tuple(observation_shape)
@@ -184,6 +186,7 @@ class DQNAgent(object):
     self.summary_writer = summary_writer
     self.summary_writing_frequency = summary_writing_frequency
     self.allow_partial_reload = allow_partial_reload
+    self.train_from_scratch = train_from_scratch
 
     with tf.device(tf_device):
       # Create a placeholder for the state input to the DQN network.
@@ -332,8 +335,22 @@ class DQNAgent(object):
       # Assign weights from online to target network.
       sync_qt_ops.append(w_target.assign(w_online, use_locking=True))
 
-    # TODO: re-init online params
     return sync_qt_ops
+
+  def _build_reset_op(self):
+    self._reinit_layers(self.online_convnet)
+
+  def _reinit_layers(self, model):
+    """ Reinitialize the layers
+      # https://github.com/keras-team/keras/issues/341
+    """
+    for layer in model.layers:
+      for v in layer.__dict__:
+        v_arg = getattr(layer, v)
+        if hasattr(v_arg, 'initializer'):
+          initializer_method = getattr(v_arg, 'initializer')
+          initializer_method.run(session=self._sess)
+          # print('reinitializing layer {}.{}'.format(layer.name, v))
 
   def begin_episode(self, observation):
     """Returns the agent's first action for this episode.
@@ -424,8 +441,6 @@ class DQNAgent(object):
     #pdb.set_trace()
     return selected_action
 
-
-
   def _train_step(self):
     """Runs a single training step.
 
@@ -449,6 +464,9 @@ class DQNAgent(object):
 
       if self.training_steps % self.target_update_period == 0:
         self._sess.run(self._sync_qt_ops)
+        if self.train_from_scratch:
+          # TODO: re-init online params
+          self._build_reset_op()
 
     self.training_steps += 1
 
