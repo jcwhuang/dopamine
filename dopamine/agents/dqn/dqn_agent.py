@@ -331,6 +331,8 @@ class DQNAgent(object):
     for (w_online, w_target) in zip(trainables_online, trainables_target):
       # Assign weights from online to target network.
       sync_qt_ops.append(w_target.assign(w_online, use_locking=True))
+
+    # TODO: re-init online params
     return sync_qt_ops
 
   def begin_episode(self, observation):
