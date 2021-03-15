@@ -235,8 +235,8 @@ class RFFDQNNetwork(tf.keras.Model):
     x = self.conv1(x)
     x = self.conv2(x)
     x = self.conv3(x)
-    x = tf.stop_gradient(self.rff(x))
     x = self.flatten(x)
+    x = tf.stop_gradient(self.rff(x))
     x = self.dense1(x)
 
     return DQNNetworkType(self.dense2(x))
