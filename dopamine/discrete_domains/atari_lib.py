@@ -212,7 +212,7 @@ class RFFDQNNetwork(tf.keras.Model):
     self.dense2 = tf.keras.layers.Dense(num_actions, name='fully_connected')
 
     self.rff = tf.keras.layers.experimental.RandomFourierFeatures(512, kernel_initializer='gaussian',
-                                                                  name='random_fourier')
+                                                                  name='random_fourier', trainable=True)
 
   def call(self, state):
     """Creates the output tensor/op given the state tensor as input.
