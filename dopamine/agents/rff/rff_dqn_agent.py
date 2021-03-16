@@ -8,9 +8,9 @@ import gin.tf
 
 @gin.configurable
 class RFFDQNAgent(dqn_agent.DQNAgent):
-    """An implementation of the DQN agent."""
+  """An implementation of the DQN agent."""
 
-    def __init__(
+  def __init__(
             self,
             sess,
             num_actions,
@@ -37,8 +37,10 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
         axis=1,
         name='replay_chosen_q')
 
+    import pdb;pdb.set_trace()
+
     rffs = self._replay_net_outputs.rff
-    inner_prods = tf.reduce_sum(tf.multiply(rffs, rffs), 1, keep_dims=True)
+    inner_prods = tf.reduce_sum(tf.multiply(rffs, rffs), 1, keepdims=True)
     variance = tfp.stats.variance(inner_prods)
 
     target = tf.stop_gradient(self._build_target_q_op())

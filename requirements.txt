@@ -47,6 +47,7 @@ setuptools==49.2.01
 tensorboard==2.3.0
 tensorboard-plugin-wit==1.7.0
 tensorflow==2.3.0
+tensorflow-probability==0.11.0
 tensorflow-estimator==2.3.0
 termcolor==1.1.0
 tf-slim==1.1.0
