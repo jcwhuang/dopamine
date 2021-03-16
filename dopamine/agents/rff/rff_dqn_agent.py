@@ -37,10 +37,8 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
         axis=1,
         name='replay_chosen_q')
 
-    import pdb;pdb.set_trace()
-
     rffs = self._replay_net_outputs.rff
-    inner_prods = tf.reduce_sum(tf.multiply(rffs, rffs), 1, keepdims=True)
+    inner_prods = tf.reduce_sum(tf.multiply(rffs, rffs), 1)
     variance = tfp.stats.variance(inner_prods)
 
     target = tf.stop_gradient(self._build_target_q_op())
