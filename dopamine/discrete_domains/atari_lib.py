@@ -62,8 +62,7 @@ RainbowNetworkType = collections.namedtuple(
     'c51_network', ['q_values', 'logits', 'probabilities'])
 ImplicitQuantileNetworkType = collections.namedtuple(
     'iqn_network', ['quantile_values', 'quantiles'])
-
-
+RFFDQNNetworkType = collections.namedtuple('rff_dqn_network', ['q_values', 'rff'])
 
 
 @gin.configurable
@@ -209,10 +208,11 @@ class RFFDQNNetwork(tf.keras.Model):
     self.conv3 = tf.keras.layers.Conv2D(64, [3, 3], strides=1, padding='same',
                                         activation=activation_fn, name='Conv')
     self.flatten = tf.keras.layers.Flatten()
-    self.dense2 = tf.keras.layers.Dense(num_actions, name='fully_connected')
 
     self.rff = tf.keras.layers.experimental.RandomFourierFeatures(512, kernel_initializer='gaussian',
                                                                   name='random_fourier', trainable=True)
+    self.dense2 = tf.keras.layers.Dense(num_actions, name='fully_connected')
+
 
   def call(self, state):
     """Creates the output tensor/op given the state tensor as input.
@@ -234,9 +234,9 @@ class RFFDQNNetwork(tf.keras.Model):
     x = self.conv2(x)
     x = self.conv3(x)
     x = self.flatten(x)
-    x = tf.stop_gradient(self.rff(x))
+    rff = tf.stop_gradient(self.rff(x))
 
-    return DQNNetworkType(self.dense2(x))
+    return RFFDQNNetworkType(self.dense2(rff), rff)
 
 
 class RainbowNetwork(tf.keras.Model):
