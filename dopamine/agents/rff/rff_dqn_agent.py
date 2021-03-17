@@ -14,9 +14,11 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
             self,
             sess,
             num_actions,
+            scale=None,
             network=atari_lib.RFFDQNNetwork,
             **kwargs):
 
+        self.scale = scale
         dqn_agent.DQNAgent.__init__(
             self,
             sess=sess,
@@ -38,8 +40,13 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
         name='replay_chosen_q')
 
     rffs = self._replay_net_outputs.rff
-    inner_prods = tf.reduce_sum(tf.multiply(rffs, rffs), 1)
-    variance = tfp.stats.variance(inner_prods)
+    inner_prods = tf.tensordot(rffs, tf.transpose(rffs), 1)
+    diag = tf.linalg.tensor_diag_part(inner_prods)
+    diag_mean = tf.math.reduce_mean(diag)
+    normalized = inner_prods / diag_mean
+
+    inner_prod_mean = tf.math.reduce_mean(normalized)
+    inner_prod_variance = tfp.stats.variance(tf.reshape(normalized, [-1]))
 
     target = tf.stop_gradient(self._build_target_q_op())
     loss = tf.compat.v1.losses.huber_loss(
@@ -47,6 +54,11 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
     if self.summary_writer is not None:
       with tf.compat.v1.variable_scope('Losses'):
         tf.compat.v1.summary.scalar('HuberLoss', tf.reduce_mean(loss))
-      with tf.compat.v1.variable_scope('Variances'):
-        tf.compat.v1.summary.scalar('InnerProdVariance', variance)
+      with tf.compat.v1.variable_scope('Scale'):
+        tf.compat.v1.summary.scalar('InnerProdVariance', inner_prod_variance)
+        tf.compat.v1.summary.scalar('InnerProdMean', inner_prod_mean)
     return self.optimizer.minimize(tf.reduce_mean(loss))
+
+  def _create_network(self, name):
+      network = self.network(self.num_actions, self.scale, name=name)
+      return network
