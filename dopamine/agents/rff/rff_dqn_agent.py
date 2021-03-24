@@ -15,10 +15,12 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
             sess,
             num_actions,
             scale=None,
+            trainable=True,
             network=atari_lib.RFFDQNNetwork,
             **kwargs):
 
         self.scale = scale
+        self.trainable = trainable
         dqn_agent.DQNAgent.__init__(
             self,
             sess=sess,
@@ -60,5 +62,5 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
     return self.optimizer.minimize(tf.reduce_mean(loss))
 
   def _create_network(self, name):
-      network = self.network(self.num_actions, self.scale, name=name)
+      network = self.network(self.num_actions, self.scale, self.trainable, name=name)
       return network
