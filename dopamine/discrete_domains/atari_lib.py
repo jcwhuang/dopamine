@@ -62,7 +62,7 @@ RainbowNetworkType = collections.namedtuple(
     'c51_network', ['q_values', 'logits', 'probabilities'])
 ImplicitQuantileNetworkType = collections.namedtuple(
     'iqn_network', ['quantile_values', 'quantiles'])
-RFFDQNNetworkType = collections.namedtuple('rff_dqn_network', ['q_values', 'rff'])
+RFFDQNNetworkType = collections.namedtuple('rff_dqn_network', ['q_values', 'rff', 'pre_rff'])
 
 
 @gin.configurable
@@ -237,7 +237,7 @@ class RFFDQNNetwork(tf.keras.Model):
     x = self.flatten(x)
     rff = tf.stop_gradient(self.rff(x))
 
-    return RFFDQNNetworkType(self.dense2(rff), rff)
+    return RFFDQNNetworkType(self.dense2(rff), rff, x)
 
 
 class RainbowNetwork(tf.keras.Model):
