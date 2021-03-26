@@ -45,7 +45,8 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
     inner_prod_pre_rff = batch_by_batch_inner_prod(pre_rff)  # dot(a, b)
     norm_cols = tf.square(tf.norm(pre_rff, axis=1, keepdims=True))  # [batch, 1]
     norm_rows = tf.reshape(norm_cols, [1, -1]) # [1, batch]
-    pdists = norm_rows + norm_cols - 2 * inner_prod_pre_rff  # ||a||^2 + ||b||^2 - 2dot(a, b)
+    pdists_sqrd = norm_rows + norm_cols - 2 * inner_prod_pre_rff  # ||a - b||^2 = ||a||^2 + ||b||^2 - 2dot(a, b)
+    pdists = tf.math.sqrt(tf.math.maximum(pdists_sqrd, tf.zeros(pdists_sqrd.shape)))
     avg_pdists= tf.math.reduce_mean(pdists)
 
     inner_prod_rff = batch_by_batch_inner_prod(self._replay_net_outputs.rff)
