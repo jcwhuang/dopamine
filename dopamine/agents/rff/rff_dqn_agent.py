@@ -47,11 +47,17 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
     norm_rows = tf.reshape(norm_cols, [1, -1]) # [1, batch]
     pdists_sqrd = norm_rows + norm_cols - 2 * inner_prod_pre_rff  # ||a - b||^2 = ||a||^2 + ||b||^2 - 2dot(a, b)
     pdists = tf.math.sqrt(tf.math.maximum(pdists_sqrd, tf.zeros(pdists_sqrd.shape)))
-    avg_pdists= tf.math.reduce_mean(pdists)
+    avg_pdists = tf.math.reduce_mean(pdists)
+    median_pdists = tfp.stats.percentile(pdists, 50.0, interpolation='midpoint')
+    tenth_percentile_pdists = tfp.stats.percentile(pdists, 10.0, interpolation='midpoint')
 
     inner_prod_rff = batch_by_batch_inner_prod(self._replay_net_outputs.rff)
     inner_prod_mean = tf.math.reduce_mean(inner_prod_rff)
-    inner_prod_variance = tfp.stats.variance(tf.reshape(inner_prod_rff, [-1]))
+    flattened = tf.reshape(inner_prod_rff, [-1])
+    inner_prod_variance = tfp.stats.variance(flattened)
+    
+    scale_value = [v for v in tf.compat.v1.trainable_variables(scope="Online/random_fourier/kernel_scale")][0]
+    scale_value = tf.reshape(scale_value, [])
 
     '''
     rffs = self._replay_net_outputs.rff
@@ -72,8 +78,11 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
         tf.compat.v1.summary.scalar('HuberLoss', tf.reduce_mean(loss))
       with tf.compat.v1.variable_scope('Scale'):
         tf.compat.v1.summary.scalar('InnerProdVariance', inner_prod_variance)
-        tf.compat.v1.summary.scalar('InnerProdMean', inner_prod_mean)
+        #tf.compat.v1.summary.scalar('InnerProdMean', inner_prod_mean)
         tf.compat.v1.summary.scalar('AvgPairwiseDistance', avg_pdists)
+        tf.compat.v1.summary.scalar('MedianPairwiseDists', median_pdists)
+        tf.compat.v1.summary.scalar('TenthPercentilePairwiseDists', tenth_percentile_pdists)
+        tf.compat.v1.summary.scalar('ScaleValue', scale_value)
     return self.optimizer.minimize(tf.reduce_mean(loss))
 
   def _create_network(self, name):
