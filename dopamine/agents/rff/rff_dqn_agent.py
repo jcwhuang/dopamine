@@ -16,11 +16,15 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
             num_actions,
             scale=None,
             trainable=True,
+            init_conv_checkpoint_path=None,
             network=atari_lib.RFFDQNNetwork,
             **kwargs):
 
         self.scale = scale
         self.trainable = trainable
+        conv_layers = [layer for layer in tf.compat.v1.global_variables() if "Online/Conv" in layer]
+        self._conv_saver = tf.compat.v1.train.Saver(var_list=conv_layers)
+        self.init_conv_checkpoint_path = init_conv_checkpoint_path
         dqn_agent.DQNAgent.__init__(
             self,
             sess=sess,
@@ -88,6 +92,11 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
   def _create_network(self, name):
       network = self.network(self.num_actions, self.scale, self.trainable, name=name)
       return network
+
+  def unbundle(self, checkpoint_dir, iteration_number, bundle_dictionary):
+      super().unbundle(checkpoint_dir, iteration_number, bundle_dictionary)
+      if iteration_number == 0 and self.init_conv_checkpoint_path is not None:
+        self._conv_saver.restore(self._sess, self.init_conv_checkpoint_path)
 
 
 def batch_by_batch_inner_prod(mat):
