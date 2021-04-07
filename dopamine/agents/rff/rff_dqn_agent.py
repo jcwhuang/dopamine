@@ -1,3 +1,4 @@
+from absl import logging
 from dopamine.agents.dqn import dqn_agent
 from dopamine.discrete_domains import atari_lib
 import tensorflow as tf
@@ -22,8 +23,6 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
 
         self.scale = scale
         self.trainable = trainable
-        conv_layers = [layer for layer in tf.compat.v1.global_variables() if "Online/Conv" in layer]
-        self._conv_saver = tf.compat.v1.train.Saver(var_list=conv_layers)
         self.init_conv_checkpoint_path = init_conv_checkpoint_path
         dqn_agent.DQNAgent.__init__(
             self,
@@ -31,6 +30,11 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
             num_actions=num_actions,
             network=network,
             **kwargs)
+        conv_layers = [layer for layer in tf.compat.v1.global_variables() if "Online/Conv" in layer.name]
+        self._conv_saver = tf.compat.v1.train.Saver(var_list=conv_layers)
+        if self.init_conv_checkpoint_path is not None:
+          logging.info("Restoring convolutional layers from {}".format(self.init_conv_checkpoint_path))
+          self._conv_saver.restore(self._sess, self.init_conv_checkpoint_path)
 
   def _build_train_op(self):
     """Builds a training op.
@@ -92,12 +96,6 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
   def _create_network(self, name):
       network = self.network(self.num_actions, self.scale, self.trainable, name=name)
       return network
-
-  def unbundle(self, checkpoint_dir, iteration_number, bundle_dictionary):
-      super().unbundle(checkpoint_dir, iteration_number, bundle_dictionary)
-      if iteration_number == 0 and self.init_conv_checkpoint_path is not None:
-        self._conv_saver.restore(self._sess, self.init_conv_checkpoint_path)
-
 
 def batch_by_batch_inner_prod(mat):
     inner_prods = tf.tensordot(mat, tf.transpose(mat), 1)
