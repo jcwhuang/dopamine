@@ -5,6 +5,7 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 
 import gin.tf
+import os
 
 
 @gin.configurable
@@ -17,13 +18,13 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
             num_actions,
             scale=None,
             trainable=True,
-            init_conv_checkpoint_path=None,
+            init_checkpoint_dir=None,
             network=atari_lib.RFFDQNNetwork,
             **kwargs):
 
         self.scale = scale
         self.trainable = trainable
-        self.init_conv_checkpoint_path = init_conv_checkpoint_path
+        self._init_checkpoint_dir = init_checkpoint_dir
         dqn_agent.DQNAgent.__init__(
             self,
             sess=sess,
@@ -32,9 +33,6 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
             **kwargs)
         conv_layers = [layer for layer in tf.compat.v1.global_variables() if "Online/Conv" in layer.name]
         self._conv_saver = tf.compat.v1.train.Saver(var_list=conv_layers)
-        if self.init_conv_checkpoint_path is not None:
-          logging.info("Restoring convolutional layers from {}".format(self.init_conv_checkpoint_path))
-          self._conv_saver.restore(self._sess, self.init_conv_checkpoint_path)
 
   def _build_train_op(self):
     """Builds a training op.
@@ -96,6 +94,17 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
   def _create_network(self, name):
       network = self.network(self.num_actions, self.scale, self.trainable, name=name)
       return network
+
+  def unbundle(self, checkpoint_dir, iteration_number, bundle_dictionary):
+      # making assumption
+      if checkpoint_dir == self._init_checkpoint_dir:
+          # load conv layers
+          if self._init_checkpoint_dir is not None:
+            logging.info("Restoring convolutional layers from {}".format(self._init_checkpoint_dir))
+            self._conv_saver.restore(self._sess, os.path.join(self._init_checkpoint_dir, 'tf_ckpt-{}'.format(iteration_number)))
+            logging.info("Done restoring convolutional layers from checkpoint")
+      else:
+          super().unbundle(checkpoint_dir, iteration_number, bundle_dictionary)
 
 def batch_by_batch_inner_prod(mat):
     inner_prods = tf.tensordot(mat, tf.transpose(mat), 1)
