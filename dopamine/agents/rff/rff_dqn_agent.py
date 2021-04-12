@@ -19,20 +19,22 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
             scale=None,
             trainable=True,
             init_checkpoint_dir=None,
+            rff_output_dim=512,
             network=atari_lib.RFFDQNNetwork,
             **kwargs):
 
-        self.scale = scale
-        self.trainable = trainable
-        self._init_checkpoint_dir = init_checkpoint_dir
-        dqn_agent.DQNAgent.__init__(
-            self,
-            sess=sess,
-            num_actions=num_actions,
-            network=network,
-            **kwargs)
-        conv_layers = [layer for layer in tf.compat.v1.global_variables() if "Online/Conv" in layer.name]
-        self._conv_saver = tf.compat.v1.train.Saver(var_list=conv_layers)
+    self.scale = scale
+    self.trainable = trainable
+    self._init_checkpoint_dir = init_checkpoint_dir
+    self.rff_output_dim = rff_output_dim
+    dqn_agent.DQNAgent.__init__(
+        self,
+        sess=sess,
+        num_actions=num_actions,
+        network=network,
+        **kwargs)
+    conv_layers = [layer for layer in tf.compat.v1.global_variables() if "Online/Conv" in layer.name]
+    self._conv_saver = tf.compat.v1.train.Saver(var_list=conv_layers)
 
   def _build_train_op(self):
     """Builds a training op.
@@ -92,8 +94,9 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
     return self.optimizer.minimize(tf.reduce_mean(loss))
 
   def _create_network(self, name):
-      network = self.network(self.num_actions, self.scale, self.trainable, name=name)
-      return network
+    network = self.network(self.num_actions, scale=self.scale, trainable=self.trainable,
+                           rff_output_dim=self.rff_output_dim, name=name)
+    return network
 
   def unbundle(self, checkpoint_dir, iteration_number, bundle_dictionary):
       # making assumption

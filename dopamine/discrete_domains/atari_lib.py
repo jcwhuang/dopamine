@@ -187,7 +187,7 @@ class RFFDQNNetwork(tf.keras.Model):
       + Random Fourier Features
   """
 
-  def __init__(self, num_actions, scale=None, trainable=True, name=None):
+  def __init__(self, num_actions, scale=None, trainable=True, rff_output_dim=512, name=None):
     """Creates the layers used for calculating Q-values.
 
     Args:
@@ -209,7 +209,7 @@ class RFFDQNNetwork(tf.keras.Model):
                                         activation=activation_fn, name='Conv')
     self.flatten = tf.keras.layers.Flatten()
 
-    self.rff = tf.keras.layers.experimental.RandomFourierFeatures(512, kernel_initializer='laplacian',
+    self.rff = tf.keras.layers.experimental.RandomFourierFeatures(rff_output_dim, kernel_initializer='laplacian',
                                                                   name='random_fourier', trainable=trainable,
                                                                   scale=scale)
     self.dense2 = tf.keras.layers.Dense(num_actions, name='fully_connected')
