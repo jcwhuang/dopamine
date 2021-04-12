@@ -22,7 +22,12 @@ class RFFDQNAgent(dqn_agent.DQNAgent):
             rff_output_dim=512,
             network=atari_lib.RFFDQNNetwork,
             **kwargs):
-
+    logging.info('Creating %s agent with the following parameters:',
+                 self.__class__.__name__)
+    logging.info('\t scale: %f', scale)
+    logging.info('\t trainable: %f', trainable)
+    logging.info('\t rff_output_dim: %d', rff_output_dim)
+    logging.info('\t init_checkpoint_dir: %d', init_checkpoint_dir)
     self.scale = scale
     self.trainable = trainable
     self._init_checkpoint_dir = init_checkpoint_dir
